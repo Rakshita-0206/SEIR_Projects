@@ -2,49 +2,58 @@ import requests
 import sys
 from bs4 import BeautifulSoup
 
-# get url from user
+# check if user gave a url
 if len(sys.argv) < 2:
-    print("you need to provide the url, otherwise this will not work")
-    sys.exit()
+    print("Please give a URL to run this program.")
+    sys.exit(0)
 
-url = sys.argv[1]
-print("processing the provided url",url)
-if not url.startswith("http"):
-    url = "https://" + url
+site_re = sys.argv[1]
+print("Working on:", site_re)
 
-# get page
-page_data = requests.get(url)
-page_soup = BeautifulSoup(page_data.text, 'html.parser')
+# add https if missing example: "univ.sitare.org"
+if not site_re.startswith("http"):
+    site_re = "https://" + site_re
 
-print("\n" + "TITLE fetching ")
-title_tag = page_soup.find('title')
-if title_tag and title_tag.string:
-    print(title_tag.string.strip())
+# download page that user needed 
+response = requests.get(site_re)
+parts_of_website = BeautifulSoup(response.text, "html.parser")
+
+# extracting the tittle of the website 
+print("\n TITLE")
+title = parts_of_website.find("title")
+if title is not None and title.string:
+    print(title.string.strip())
 else:
-    print("no tittle this website contain")
+    print("website do not have the tittle")
 
-# 2. body
-print("\n" + "BODY")
-body_tag = page_soup.find('body')
-if body_tag:
-    body_text = body_tag.get_text()
-    clean_lines = []
-    for line in body_text.split('\n'):
-        line = line.strip()
-        if line:
-            clean_lines.append(line)
-    print(" ".join(clean_lines))
+# extracting the body of the website 
+print("\nBODY")
+body = parts_of_website.find("body")
+if body is not None:
+    text = body.get_text()
+    lines = text.split("\n")
+    req_cleaned= []
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line != "":
+            req_cleaned.append(line)
+        i += 1
+    print(" ".join(req_cleaned))
 else:
-    print("this website not contain any body")
+    print("there is no body present in the website.")
 
-#extracting the link 
-print("\n" + "Links of the website")
-link_num = 0
-for i in page_soup.find_all('a'):
-    link = i.get('href')
-    if link and link.startswith('http'):
-        link_num = link_num + 1
-        print(str(link_num) + ". " + link)
+# extracting the links in the website 
+print("\n LINKS")
+all_links = parts_of_website.find_all("a")
+count = 0
+j = 0
+while j < len(all_links):
+    link = all_links[j].get("href")
+    if link is not None and link.startswith("http"):
+        count += 1
+        print(str(count) + ") " + link)
+    j += 1
 
-if link_num == 0:
-    print("no links found in this website")
+if count == 0:
+    print("No links found.")
